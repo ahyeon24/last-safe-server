@@ -1,0 +1,110 @@
+<div id="erd"></div>
+<script type="module">
+import mermaid from 'https://esm.sh/mermaid@11/dist/mermaid.esm.min.mjs';
+const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+await document.fonts.ready;
+mermaid.initialize({
+  startOnLoad: false,
+  theme: 'base',
+  fontFamily: '"anthropic-sans", sans-serif',
+  themeVariables: {
+    darkMode: dark,
+    fontSize: '13px',
+    fontFamily: '"anthropic-sans", sans-serif',
+    lineColor: dark ? '#9c9a92' : '#73726c',
+    textColor: dark ? '#c2c0b6' : '#3d3d3a',
+  },
+});
+const { svg } = await mermaid.render('erd-svg', `erDiagram
+  USER ||--o{ FAVORITE_DESTINATION : registers
+  USER ||--o{ DEPARTURE_ALARM : registers
+  DEPARTURE_ALARM ||--|| ROUTE_CANDIDATE : based_on
+  ROUTE_CANDIDATE ||--o{ SEGMENT : consists_of
+  BUS_ARRIVAL_LOG }o--|| BUS_LAST_TIME_STAT : aggregated_into
+
+  USER {
+    bigint id PK
+    string oauth_provider
+    string oauth_id
+    string nickname
+    datetime created_at
+    datetime deleted_at
+  }
+  FAVORITE_DESTINATION {
+    bigint id PK
+    bigint user_id FK
+    string label
+    double latitude
+    double longitude
+  }
+  DEPARTURE_ALARM {
+    bigint id PK
+    bigint user_id FK
+    bigint route_candidate_id FK
+    double origin_lat
+    double origin_lng
+    double dest_lat
+    double dest_lng
+    datetime alarm_time
+    int minutes_before
+    string status
+  }
+  ROUTE_CANDIDATE {
+    bigint id PK
+    int total_duration_sec
+    int total_cost
+    datetime min_departure_time
+    datetime min_departure_time_raw
+  }
+  SEGMENT {
+    bigint id PK
+    bigint route_candidate_id FK
+    int seq_order
+    string transport_type
+    string route_name
+    datetime last_time_raw
+    boolean is_estimated
+    int buffer_sec
+  }
+  BUS_ARRIVAL_LOG {
+    bigint id PK
+    string station_id
+    string bus_route_id
+    string day_type
+    datetime arrival_time
+    datetime observed_at
+  }
+  BUS_LAST_TIME_STAT {
+    bigint id PK
+    string station_id
+    string bus_route_id
+    string day_type
+    time estimated_last_time
+    int sample_count
+    datetime last_updated_at
+  }`);
+document.getElementById('erd').innerHTML = svg;
+
+document.querySelectorAll('#erd svg.erDiagram .node').forEach(node => {
+  const firstPath = node.querySelector('path[d]');
+  if (!firstPath) return;
+  const d = firstPath.getAttribute('d');
+  const nums = d.match(/-?[\d.]+/g)?.map(Number);
+  if (!nums || nums.length < 8) return;
+  const xs = [nums[0], nums[2], nums[4], nums[6]];
+  const ys = [nums[1], nums[3], nums[5], nums[7]];
+  const x = Math.min(...xs), y = Math.min(...ys);
+  const w = Math.max(...xs) - x, h = Math.max(...ys) - y;
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', x); rect.setAttribute('y', y);
+  rect.setAttribute('width', w); rect.setAttribute('height', h);
+  rect.setAttribute('rx', '8');
+  for (const a of ['fill', 'stroke', 'stroke-width', 'class', 'style']) {
+    if (firstPath.hasAttribute(a)) rect.setAttribute(a, firstPath.getAttribute(a));
+  }
+  firstPath.replaceWith(rect);
+});
+document.querySelectorAll('#erd svg.erDiagram .row-rect-odd path, #erd svg.erDiagram .row-rect-even path').forEach(p => {
+  p.setAttribute('stroke', 'none');
+});
+</script>
