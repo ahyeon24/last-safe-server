@@ -42,6 +42,9 @@ out/
 ### VS Code ###
 .vscode/
 
+### macOS ###
+.DS_Store
+
 ### 환경설정 (비밀값 포함 가능) ###
 application-local.yml
 application-local.properties

@@ -42,6 +42,7 @@
 - **경로 조회 이력은 알람 등록된 경로만 DB 저장**, 나머지는 폐기 (보존 기간 정책은 미해결 사항).
 - **버퍼(여유시간)는 국토부 추정 기반 버스 구간에만, 구간별로 적용 후 합산**. 지하철·서울시 API 기반 버스에는 미적용.
 - **막차 전멸 판정(FR-08a/b)은 버퍼 적용 전 원본 시각(`min_departure_time_raw`) 기준**. 순서를 바꾸면 오판 가능.
+- **첫 구간이 SUBWAY일 때 `min_departure_time`은 실제 시간표에 스냅한 값으로 교체**(5.1절). 계산상 데드라인을 그대로 보여주면 실제로는 그 시각에 열차가 없어 이미 늦은 상황을 "안 늦음"으로 오판할 수 있음. BUS는 보류(서울시 버스 막차 API 가용성 미검증).
 
 ## 5. 막차 역산 알고리즘 (알고리즘 설계서 v0.5)
 
@@ -106,6 +107,36 @@ segments에 SUBWAY/BUS가 하나도 없으면(전 구간 도보) 알고리즘 �
 
 결과: `min_departure_time_raw` = 23:15, `min_departure_time` = 23:10 (버퍼 5분 차감), `bottleneck_segment_index` = 1(지하철 구간).
 
+### 5.1 첫 구간 실제 배차 스냅 (지하철 한정, 설계 논의 중)
+
+**배경**: 위 알고리즘의 `min_departure_time`은 역산으로 나온 계산상 데드라인일 뿐, 그 시각에 실제 열차/버스가 있다는 보장이 없다. 예: 데드라인이 23:07인데 실제 지하철 배차가 23:05·23:10뿐이면 23:05차를 놓치는 순간 이미 늦은 것인데, 사용자에게는 "23:07까지 나가면 됨"으로 안내되어 오판을 유발할 수 있다.
+
+**적용 범위**:
+- 병목이 아닌 모든 구간이 이론상 계산된(실제 시간표와 무관한) 값을 갖지만, 사용자가 실제로 행동을 결정하는 지점은 **첫 번째 교통 구간**뿐이다. 중간 환승 구간은 그 순간 실제로 도착한 열차·버스를 타게 되므로 스냅이 불필요하다.
+- 첫 구간이 **SUBWAY**인 경우만 우선 적용한다. **BUS**는 보류 — 서울시 버스 막차 API 가용 여부 자체가 미검증 상태이고(3절·10절), 실시간 도착정보 위주라 미래 특정 시각 기준 시간표 조회가 어려울 수 있다. 검증 완료 후 재논의.
+
+**데이터 소스**: ODsay `searchSubwaySchedule`(`firstLastFlag` 필드로 첫차/막차 구분, 3절)이 해당 역의 배차 시각표를 제공하는 것으로 파악된다. 신규 API 연동 없이 기존 계획된 연동 범위에서 해결 가능할 것으로 보이나, 응답에 중간 배차 전체가 포함되는지는 실제 연동 시 재확인 필요.
+
+**로직 통합 지점** (기존 알고리즘 계산 완료 후, 첫 구간이 SUBWAY일 때만 추가 수행):
+```
+if segments[0].type == SUBWAY:
+  deadline = min_departure_time  # 버퍼 반영된 값 기준
+  actual_departure = 해당 역 시간표에서 deadline 이하 중 가장 늦은 실제 배차 시각
+
+  if actual_departure == null:
+    # deadline이 그날 첫차보다도 이른 경우 등 극단 케이스 — 아래 미해결 참고
+  else:
+    min_departure_time = actual_departure  # 스냅된 값으로 교체
+    if departure_datetime > actual_departure:
+      is_last_train_gone = true  # 스냅 기준 전멸 재판정 (원본 시각 기준 판정에 추가되는 별도 검사)
+```
+`min_departure_time_raw`는 스냅 미적용, 기존 그대로(버퍼 적용 전) 유지한다 — "전멸 판정은 원본 시각 기준"(4절) 규칙과 별개로, 스냅 결과에 의한 전멸 재판정은 추가 레이어로 취급한다.
+
+**미해결 (구현 전 확정 필요)**:
+- `actual_departure`를 못 찾는 극단 케이스(데드라인이 첫차 시각보다 이른 경우 등) 처리 방식.
+- 스냅용 "역 시간표" 조회 결과 캐싱 전략 — 기존 막차 시각 캐시(당일 자정 만료)와 통합할지, 별도 캐시를 둘지.
+- BUS 구간 스냅 여부는 서울시 버스 막차 API 가용성 검증(10절) 이후 재논의.
+
 ## 6. API 명세 (API 명세서 v0.11)
 
 Base URL: `https://api.lastsafe.app/v1`
@@ -140,8 +171,8 @@ Base URL: `https://api.lastsafe.app/v1`
       "candidate_id": "uuid",
       "total_duration_sec": 2580,
       "total_cost": 1500,
-      "min_departure_time": "...",
-      "min_departure_time_raw": "...",
+      "min_departure_time": "...",  // 첫 구간이 SUBWAY면 실제 배차 스냅값 (5.1절)
+      "min_departure_time_raw": "...",  // 스냅 미적용, 전멸 판정 원본 시각용
       "is_last_train_gone": false,
       "bottleneck_segment_index": 1,
       "destination": {lat,lng},
@@ -233,3 +264,4 @@ BUS_ARRIVAL_LOG }o--|| BUS_LAST_TIME_STAT   # Phase 2 통계용
 - 서울시 버스 막차 API 실제 가용 여부 (문서상 "서비스 종료 안내" 표시됨) — API 키 발급 후 직접 검증 필요
 - iOS Critical Alert, 로컬 알림 소실 대비 서버 백업 로직 — MVP 범위 외
 - 앱 내 자체 길찾기(지도 SDK 렌더링) — MVP 범위 외, 딥링크로 대체 중
+- 첫 구간 실제 배차 스냅(5.1절) — 극단 케이스 처리, 캐싱 전략, BUS 확대 여부 미확정

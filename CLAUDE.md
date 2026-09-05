@@ -84,6 +84,11 @@ Java / Spring Boot / MySQL / Redis / Gradle
 3. `NO_SERVICE`(막차 데이터상 운행 없음)와 `FETCH_ERROR`(API/캐시 조회 실패)는 반드시 분리 처리.
    전자는 `NO_ROUTE_AVAILABLE`(200), 후자는 `EXTERNAL_API_UNAVAILABLE`(503).
 
+**ODsay 연동 시작할 때** `docs/spec.md` 5.1절(첫 구간 실제 배차 스냅)도 같이 참고할 것.
+계산상 데드라인(`min_departure_time`)을 그대로 보여주면 실제 배차 시각과 어긋나 오판을
+유발할 수 있음 — 첫 구간이 SUBWAY인 경우 `searchSubwaySchedule` 결과로 스냅하는 로직을
+이 시점에 같이 구현. 미해결 항목(극단 케이스, 캐싱 전략)은 5.1절에 남겨둠.
+
 ## 작업 방식 — 바이브코딩
 
 Java/Spring Boot 경험이 거의 없는 상태에서, **직접 짜면서 배우는 방식**으로 진행 중.
@@ -155,6 +160,8 @@ src/main/java/com/lastsafe/
   domain/          # 도메인 서비스 (LastTrainCalculationService 등)
   api/             # REST 컨트롤러
   external/        # ODsay, 서울시/국토부 API 연동 (인터페이스로 추상화, NFR-07)
+                   # ODsay 연동(searchSubwaySchedule) 착수 시 spec.md 5.1절(첫 구간 실제 배차
+                   # 스냅) 먼저 참고 — 지금은 미구현이고, 이 연동을 짤 때 같이 처리할 것
   cache/           # Redis 캐싱 로직
   entity/          # JPA 엔티티 (ERD 기준)
 docs/
