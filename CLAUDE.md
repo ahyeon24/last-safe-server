@@ -90,10 +90,19 @@ Java / Spring Boot / MySQL / Redis / Gradle
 3. `NO_SERVICE`(막차 데이터상 운행 없음)와 `FETCH_ERROR`(API/캐시 조회 실패)는 반드시 분리 처리.
    전자는 `NO_ROUTE_AVAILABLE`(200), 후자는 `EXTERNAL_API_UNAVAILABLE`(503).
 
-**ODsay 연동 시작할 때** `docs/spec.md` 5.1절(첫 구간 실제 배차 스냅)도 같이 참고할 것.
-계산상 데드라인(`min_departure_time`)을 그대로 보여주면 실제 배차 시각과 어긋나 오판을
-유발할 수 있음 — 첫 구간이 SUBWAY인 경우 `searchSubwaySchedule` 결과로 스냅하는 로직을
-이 시점에 같이 구현. 미해결 항목(극단 케이스, 캐싱 전략)은 5.1절에 남겨둠.
+**[갱신] 5.1절 스냅 로직은 순수 계산 부분(`TripSnapper`/`SnapResult` 주입 구조)까지 구현
+완료됨** — `LastTrainCalculationService`가 각 교통 구간의 candidate를 앞 구간으로 전파하기
+전에 `TripSnapper`로 스냅한다(첫 구간만이 아니라 전 구간, 2026-09-07 설계 재검토로 확장).
+**ODsay/TAGO/서울시 실제 연동을 시작할 때** 이 `TripSnapper`의 실제 구현체(외부 API를
+실제로 호출하는 부분)를 조립 계층에서 만들어 주입할 것 — 계산기 자체는 이미 완성돼있어서
+건드릴 필요 없음. 미해결 항목(캐싱 전략)은 5.1절에 남겨둠.
+
+**자정 넘김/서비스 데이 처리도 반드시 거칠 것** (`docs/spec.md` 4절 신규 항목, 5.2절 참고):
+외부 API가 주는 `HH:mm` 첫차/막차 시각을 `LocalDateTime`으로 바꿀 때 `domain/calendar/
+OvernightTimeResolver`를 거쳐야 함(막차<첫차면 다음날로 계산) — 직접 "오늘 날짜 + HH:mm"으로
+파싱하면 자정 넘긴 막차 순서가 뒤집힘. 그리고 새벽 시간대 검색의 `DayType` 판별은
+`DayTypeResolver.resolveForDateTime`(새벽 04시 컷오프 — 확정 근거 없는 추정치, 10절 참고)을
+쓸 것, 달력 날짜 그대로 쓰면 안 됨.
 
 ## 작업 방식 — 바이브코딩
 

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 import com.lastsafe.entity.TransportType;
 
 /**
- * 막차 역산 알고리즘 (docs/spec.md 5절).
+ * 막차 역산 알고리즘 (docs/spec.md 5절, 5.1절).
  *
  * 경로 구간을 역방향(목적지→출발지)으로 순회하며, 각 교통 구간에서
  * "그 구간 자체 막차 시각"과 "다음 구간이 요구하는 시각에서 역산한 값" 중
@@ -21,11 +21,20 @@ import com.lastsafe.entity.TransportType;
  *    구간에서 반영한다. 경로가 WALK로 끝나면 순회 종료 후 남은 값을 최종 반영해야 한다.
  * 3. NO_SERVICE(막차 없음, 정상 도메인 결과)와 FETCH_ERROR(조회 실패, 시스템 오류)는
  *    반드시 분리 처리한다.
+ *
+ * 5.1절 스냅: 각 교통 구간의 candidate가 확정되는 즉시(다음 구간으로 전파되기 전에)
+ * {@link TripSnapper}로 실제 배차에 맞춰 보정한다. 첫 구간만 후처리로 스냅하면, 중간
+ * 구간에서 implied_by_next로 채택된 값(실제 배차가 아닐 수 있음)이 그대로 앞 구간까지
+ * 전파돼 틀린 값을 오염시킬 수 있어서 — 모든 교통 구간에서, 전파 직전에 스냅해야 한다.
+ * 이렇게 하면 "첫 구간 탑승 데드라인이 도보시간만큼 어긋나는" 문제도 자연히 해결된다 —
+ * candidate는 항상 그 구간 자체의 탑승 시각 기준이고, 도보시간 차감은 그 이후에 일어나기
+ * 때문이다. 스냅이 필요 없으면(순수 계산만 검증할 때) {@link TripSnapper#none()}을 넘긴다.
  */
 @Service
 public class LastTrainCalculationService {
 
-    public LastTrainCalculationResult calculate(List<RouteSegment> segments, LocalDateTime departureDatetime) {
+    public LastTrainCalculationResult calculate(
+            List<RouteSegment> segments, LocalDateTime departureDatetime, TripSnapper tripSnapper) {
         boolean hasTransitSegment = segments.stream().anyMatch(s -> s instanceof TransitSegment);
         if (!hasTransitSegment) {
             throw new IllegalArgumentException(
@@ -70,6 +79,17 @@ public class LastTrainCalculationService {
             } else {
                 bottleneckSegmentIndex = i;
             }
+
+            // 5.1절: 다음(앞쪽) 구간으로 전파되기 전에 스냅 — implied_by_next로 채택된
+            // candidate는 실제 배차가 아닐 수 있으므로, 여기서 보정 안 하면 틀린 값이 그대로
+            // 전파된다.
+            SnapResult snapResult = tripSnapper.findLatestTripAtOrBefore(transit, candidate);
+            if (snapResult instanceof SnapResult.Snapped snapped) {
+                candidate = snapped.time();
+            } else if (snapResult instanceof SnapResult.NoTripBeforeDeadline) {
+                return new LastTrainCalculationResult.NoService(i);
+            }
+            // ScheduleUnavailable이면 candidate를 그대로 둔다(폴백).
 
             requiredArrivalTime = candidate;
             pendingWalkSec = 0;
