@@ -93,9 +93,19 @@ Java / Spring Boot / MySQL / Redis / Gradle
 **[갱신] 5.1절 스냅 로직은 순수 계산 부분(`TripSnapper`/`SnapResult` 주입 구조)까지 구현
 완료됨** — `LastTrainCalculationService`가 각 교통 구간의 candidate를 앞 구간으로 전파하기
 전에 `TripSnapper`로 스냅한다(첫 구간만이 아니라 전 구간, 2026-09-07 설계 재검토로 확장).
-**ODsay/TAGO/서울시 실제 연동을 시작할 때** 이 `TripSnapper`의 실제 구현체(외부 API를
-실제로 호출하는 부분)를 조립 계층에서 만들어 주입할 것 — 계산기 자체는 이미 완성돼있어서
-건드릴 필요 없음. 미해결 항목(캐싱 전략)은 5.1절에 남겨둠.
+
+**[2026-09-07 추가] 조립 계층의 `TripSnapper` 구현체(`assembly/AssemblyTripSnapper`)도
+구현 완료.** SUBWAY/BUS 벤더 분기는 이 클래스 한 곳에만 있음(spec.md 4절 원칙). 클라이언트를
+`Optional<SubwayScheduleClient>`/`Optional<BusLastDepartureClient>`로 받아서, 실 연동이
+없으면(현재 상태) 항상 `ScheduleUnavailable`로 폴백 — `DayTypeResolver`와 마찬가지 이유로
+아직 `@Service` 빈으로 등록하지 않음. `TransitSegment`에 `stationId`/`routeOrDirectionId`
+필드를 추가했고(기존 5-인자 생성자는 순수 계산 테스트 호환을 위해 남겨둠, null로 채워짐),
+**ODsay/TAGO/서울시 실제 연동을 시작할 때** 이 인터페이스들의 진짜 구현체를 만들어서
+`AssemblyTripSnapper` 생성자에 `Optional.of(...)`로 주입하고, 그때 조립 설정에서 빈으로
+등록할 것 — `AssemblyTripSnapper`와 계산기 자체는 건드릴 필요 없음. BUS 지역별(서울/TAGO)
+분기용 리졸버·팩토리는 그 구현체가 실제로 2개 이상 생길 때 도입(spec.md 4절) — 지금은
+구현체가 하나도 없어 미리 만들면 근거 없는 추상화가 됨. 미해결 항목(캐싱 전략)은 5.1절에
+남겨둠.
 
 **자정 넘김/서비스 데이 처리도 반드시 거칠 것** (`docs/spec.md` 4절 신규 항목, 5.2절 참고):
 외부 API가 주는 `HH:mm` 첫차/막차 시각을 `LocalDateTime`으로 바꿀 때 `domain/calendar/
