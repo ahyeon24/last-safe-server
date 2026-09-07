@@ -61,7 +61,7 @@ public class AssemblyTripSnapper implements TripSnapper {
             return new SnapResult.ScheduleUnavailable();
         }
         return toSnapResult(busClient.get().findLatestDepartureAtOrBefore(
-                segment.stationId(), segment.routeOrDirectionId(), deadline, dayType));
+                segment.stationId(), segment.routeOrDirectionId(), segment.cityCode(), deadline, dayType));
     }
 
     private SnapResult toSnapResult(Optional<LocalDateTime> latestTripAtOrBefore) {

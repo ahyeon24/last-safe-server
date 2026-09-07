@@ -22,9 +22,12 @@ public interface BusLastDepartureClient {
 
     /**
      * {@code serviceDate}가 필요한 이유는 {@link SubwayScheduleClient#findLastDeparture}와 동일 —
-     * dayType만으론 시각표 항목을 실제 {@link LocalDateTime}으로 못 만든다.
+     * dayType만으론 시각표 항목을 실제 {@link LocalDateTime}으로 못 만든다. {@code cityCode}는
+     * TAGO 버스 계열 API 전부(5.2절 `getRouteInfoIem`/`getRouteAcctoThrghSttnList`, 5.3절
+     * `getRouteAcctoBusLcList`)가 routeId만으론 조회가 안 되고 요구하는 필수 파라미터라 여기서도
+     * 받는다 — 어떤 도시코드를 쓸지는 조립 계층이 안다고 가정.
      */
-    LastDeparture findLastDeparture(String stationId, String routeId, LocalDate serviceDate, DayType dayType);
+    LastDeparture findLastDeparture(String stationId, String routeId, String cityCode, LocalDate serviceDate, DayType dayType);
 
     /**
      * deadline 이하의 실제(또는 5.2절 추정) 배차 시각 중 가장 늦은 것. {@code SubwayScheduleClient}의
@@ -32,5 +35,5 @@ public interface BusLastDepartureClient {
      * 쓰인다 (spec.md 5.1절). 그런 배차가 없으면(예: deadline이 그날 첫차보다 이른 경우) empty.
      */
     Optional<LocalDateTime> findLatestDepartureAtOrBefore(
-            String stationId, String routeId, LocalDateTime deadline, DayType dayType);
+            String stationId, String routeId, String cityCode, LocalDateTime deadline, DayType dayType);
 }

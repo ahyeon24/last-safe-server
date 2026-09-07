@@ -150,6 +150,17 @@ sealed interface SnapResult {
 
 ### 5.2 서울 외 지역 정류소별 막차 시각 추정 (1단계 계산식, 2026-09-06 확정)
 
+**[2026-09-07 구현 완료]** `TagoBusLastDepartureClient`(`external/tago/`)로 `BusLastDepartureClient`
+실제 구현 완료 — `getRouteInfoIem` + `getRouteAcctoThrghSttnList` 실제 문서 기반 연동, 순수 계산
+(`BusStopLastDepartureEstimator`, 이미 구현·테스트돼있던 것)에 그대로 위임. 평균속도는
+`bus-estimate.average-speed-mps` 설정값으로 뺐음(기본 10m/s, 미확정치 — 아래 문단 그대로).
+`BusLastDepartureClient.findLastDeparture`/`findLatestDepartureAtOrBefore`에 `cityCode`
+파라미터가 추가됨 — TAGO 버스 계열 API 전부 routeId만으론 조회가 안 되고 필수라서(TransitSegment
+에도 `cityCode` 필드 추가, 조립 계층이 채워줘야 함). ⚠️ 실제 키로 호출 확인은 아직 안 함.
+**findLatestDepartureAtOrBefore는 근사치임에 주의** — 이 API가 주는 건 "노선 막차 시각 1건"뿐이라
+진짜 배차 목록 조회가 아니라 "추정 막차가 deadline 이하인지"만 확인한다(5.3절 실제 관측
+데이터 기반 구현체가 이 근사를 나중에 대체).
+
 **전제 데이터** (모두 TAGO 버스노선정보 서비스, 실제 호출로 확인됨):
 - `노선정보항목조회`(`getRouteInfoIem`): 노선의 `endvehicletime`(막차시간, `HHMM`), 요일별 배차간격 `intervaltime`(평일)/`intervalsattime`(토요일)/`intervalsuntime`(일요일)
 - `노선별경유정류소목록조회`(`getRouteAcctoThrghSttnList`): 노선의 전체 정류소를 기점부터 순서대로(`nodeord`, 기점=1) 좌표(`gpslati`/`gpslong`)와 함께 나열. **정류소 간 거리·소요시간 필드는 없음** — 좌표로 직접 계산해야 함.
@@ -167,6 +178,16 @@ sealed interface SnapResult {
 **5.2절은 1단계(즉시 출시용) 계산식이고, 실제 정확도는 5.3절 관측 데이터가 쌓이면서 대체되는 임시 추정치다.**
 
 ### 5.3 버스 심야 운행 기록 수집 (Phase 2 기반, 2026-09-07 방향 확정)
+
+**[2026-09-07 구현 현황]** 아래 스키마의 엔티티 3종(`BusPollAttempt`/`BusVehiclePosition`/
+`BusNodePassage`) + Repository, 통과 시각 보간 로직(`domain/bus/BusNodePassageEstimator`,
+연속된 두 관측 사이에서 목표 정류소 순번을 건너뛰었는지/정확히 맞았는지로 `isObserved` 판정),
+TAGO `getRouteAcctoBusLcList` 실제 클라이언트(`external/tago/TagoBusPositionClient`, 실제
+활용가이드 문서 기반, `cityCode`가 필수 파라미터임을 확인함)까지 구현 완료. **아직 없는 것**:
+스케줄러 본체(`@Scheduled`로 "이 노선을 지금 폴링해야 하는지" 판단해서 실제로 도는 부분) —
+"막차 예정 시각(5.2절) 기준 앞뒤 2~3시간"을 판단하려면 5.2절 실연동(노선별 추정 막차 시각
+계산)이 먼저 배선돼야 하는데 그게 아직 없어서, 지금 스케줄러를 만들면 속이 빈 코드가 됨.
+5.2절 연동 붙을 때 같이 만들 것. `cityCode` 목록(서울 + MVP 대상 경기 시·군) 관리도 미착수.
 
 **목표 재정의**: 애초 "정류소별 막차 시각 하나"를 모으는 게 목표였는데, 이걸로는 환승 시나리오를 못 푼다는 게 드러났다(5.1절). 지하철 막차 환승 때문에 버스를 23:50까지는 타야 하는데, 그 버스의 실제 막차가 00:30이면 "막차 정보"만으론 23:50 근처에 탈 수 있는 차가 있는지조차 알 수 없다. 그래서 목표는 **"막차 하나"가 아니라 "막차 직전 몇 시간의 실제 운행 기록(심야 시간표)"을 재구축하는 것**이다.
 

@@ -10,6 +10,11 @@ import com.lastsafe.entity.TransportType;
  * 필요한 역/정류장·노선 식별자. 순수 계산 로직({@link LastTrainCalculationService})은 이 값을
  * 전혀 쓰지 않으므로, 계산 로직만 검증하는 기존 테스트가 깨지지 않도록 5-인자 생성자를 남겨두고
  * 거기선 null로 채운다.
+ *
+ * cityCode: TAGO 버스 계열 API가 routeId만으론 조회가 안 되고 도시코드가 필수 파라미터라
+ * (5.2절 `getRouteInfoIem`/`getRouteAcctoThrghSttnList`, 5.3절 `getRouteAcctoBusLcList` 전부
+ * 동일) BUS 구간에만 필요 — SUBWAY는 안 씀. 기존 7-인자 호출부(AssemblyTripSnapperTest 등)가
+ * 깨지지 않도록 7-인자 생성자도 남겨두고 거기선 null로 채운다.
  */
 public record TransitSegment(
         TransportType type,
@@ -18,7 +23,8 @@ public record TransitSegment(
         boolean isEstimated,
         int bufferSec,
         String stationId,
-        String routeOrDirectionId
+        String routeOrDirectionId,
+        String cityCode
 ) implements RouteSegment {
 
     public TransitSegment {
@@ -29,6 +35,11 @@ public record TransitSegment(
 
     public TransitSegment(TransportType type, int durationSec, LastDeparture lastDeparture,
                            boolean isEstimated, int bufferSec) {
-        this(type, durationSec, lastDeparture, isEstimated, bufferSec, null, null);
+        this(type, durationSec, lastDeparture, isEstimated, bufferSec, null, null, null);
+    }
+
+    public TransitSegment(TransportType type, int durationSec, LastDeparture lastDeparture,
+                           boolean isEstimated, int bufferSec, String stationId, String routeOrDirectionId) {
+        this(type, durationSec, lastDeparture, isEstimated, bufferSec, stationId, routeOrDirectionId, null);
     }
 }

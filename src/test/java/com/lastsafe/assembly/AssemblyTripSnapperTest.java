@@ -34,7 +34,7 @@ class AssemblyTripSnapperTest {
 
     private static TransitSegment busSegment(LocalDateTime candidateLastDeparture) {
         return new TransitSegment(TransportType.BUS, 600, LastDeparture.found(candidateLastDeparture),
-                true, 300, "stopA", "routeA");
+                true, 300, "stopA", "routeA", "25");
     }
 
     @Test
@@ -107,13 +107,14 @@ class AssemblyTripSnapperTest {
     void BUS는_busClient가_있으면_SUBWAY와_동일하게_실제_배차로_스냅된다() {
         BusLastDepartureClient fakeClient = new BusLastDepartureClient() {
             @Override
-            public LastDeparture findLastDeparture(String stationId, String routeId, LocalDate serviceDate, DayType dayType) {
+            public LastDeparture findLastDeparture(
+                    String stationId, String routeId, String cityCode, LocalDate serviceDate, DayType dayType) {
                 throw new UnsupportedOperationException("이 테스트에선 사용 안 함");
             }
 
             @Override
             public Optional<LocalDateTime> findLatestDepartureAtOrBefore(
-                    String stationId, String routeId, LocalDateTime deadline, DayType dayType) {
+                    String stationId, String routeId, String cityCode, LocalDateTime deadline, DayType dayType) {
                 return Optional.of(at(22, 20));
             }
         };

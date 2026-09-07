@@ -200,6 +200,23 @@ MVP 코딩을 막지 않기 위해 지금 당장 다루지는 않지만, **실�
   BUS에도 적용되도록 확장됨). 데이터 소스는 GBIS(경기도 전용)가 아니라 전국 단위인
   `국토교통부(TAGO)_버스위치정보`(`getRouteAcctoBusLcList`) 사용. 순서: 서울시 API 검증(완료) →
   서울·경기 한정 폴링 스케줄러 배포 전 착수 → (나중에) 통계 집계 배치 로직.
+  **[2026-09-07 진행상황]** 엔티티 3종(`BusPollAttempt`/`BusVehiclePosition`/`BusNodePassage`,
+  `entity/`) + Repository, 통과 시각 보간 로직(`domain/bus/BusNodePassageEstimator` — 연속된
+  두 관측 사이에서 목표 정류소 순번을 건너뛰었으면 보간, 정확히 맞았으면 직접 관측으로 표시),
+  TAGO `getRouteAcctoBusLcList` 실제 클라이언트(`external/tago/TagoBusPositionClient`, 실제
+  활용가이드 문서 확인함 — `cityCode` 필수 파라미터라 노선ID만으론 조회 불가) 구현 완료.
+  **스케줄러 본체는 아직** — "언제 폴링할지" 판단에 노선별 추정 막차 시각이 필요한데, 5.2절
+  실연동은 됐지만(바로 아래 항목) 그걸 스케줄러가 실제로 호출해서 폴링 대상/시각을 정하는
+  오케스트레이션 코드는 아직 안 만듦. `cityCode` 목록(서울+MVP 대상 경기 시·군) 관리도 미착수.
+- **[2026-09-07 완료] 5.2절 버스 막차 1단계 추정(`TagoBusLastDepartureClient`) 실연동 완료.**
+  `getRouteInfoIem`(막차/첫차시각) + `getRouteAcctoThrghSttnList`(정류소 목록·좌표) 실제
+  활용가이드 문서 기반, 이미 있던 순수 계산(`BusStopLastDepartureEstimator`)에 그대로 위임.
+  평균속도는 `bus-estimate.average-speed-mps` 설정값(기본 10m/s, 미확정치)으로 뺌.
+  `BusLastDepartureClient` 인터페이스에 `cityCode` 파라미터 추가(TAGO 버스 API 전부 필수라서),
+  `TransitSegment`에도 `cityCode` 필드 추가 — 조립 계층이 이 값을 채워줘야 실제로 동작함(아직
+  조립 계층에서 실제 라우트 검색 결과로부터 cityCode를 채우는 배선은 없음, ODsay 경로 탐색
+  연동 붙을 때 같이 할 것). `AssemblyTripSnapper`의 `Optional<BusLastDepartureClient>` 슬롯에
+  이제 실제로 채울 수 있는 구현체가 하나 생김. ⚠️ 실제 키로 호출 확인은 아직 안 함.
 - **개인정보처리방침, 이용약관 작성 및 앱 내 게시.** 위치정보, OAuth 계정 정보를 다루므로 앱스토어
   심사에서도 요구되고 법적으로도 필요.
 - **위치기반서비스 사업자 신고 여부 확인.** 국내에서 위치정보를 활용한 서비스는 방송통신위원회
