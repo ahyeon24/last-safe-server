@@ -51,7 +51,7 @@ class AssemblyTripSnapperTest {
     void SUBWAY는_실제_배차가_있으면_Snapped를_반환한다() {
         SubwayScheduleClient fakeClient = new SubwayScheduleClient() {
             @Override
-            public LastDeparture findLastDeparture(String stationId, String direction, DayType dayType) {
+            public LastDeparture findLastDeparture(String stationId, String direction, LocalDate serviceDate, DayType dayType) {
                 throw new UnsupportedOperationException("이 테스트에선 사용 안 함");
             }
 
@@ -73,7 +73,7 @@ class AssemblyTripSnapperTest {
     void SUBWAY는_데드라인_이하_배차가_없으면_NoTripBeforeDeadline을_반환한다() {
         SubwayScheduleClient fakeClient = new SubwayScheduleClient() {
             @Override
-            public LastDeparture findLastDeparture(String stationId, String direction, DayType dayType) {
+            public LastDeparture findLastDeparture(String stationId, String direction, LocalDate serviceDate, DayType dayType) {
                 throw new UnsupportedOperationException("이 테스트에선 사용 안 함");
             }
 
@@ -107,7 +107,7 @@ class AssemblyTripSnapperTest {
     void BUS는_busClient가_있으면_SUBWAY와_동일하게_실제_배차로_스냅된다() {
         BusLastDepartureClient fakeClient = new BusLastDepartureClient() {
             @Override
-            public LastDeparture findLastDeparture(String stationId, String routeId, DayType dayType) {
+            public LastDeparture findLastDeparture(String stationId, String routeId, LocalDate serviceDate, DayType dayType) {
                 throw new UnsupportedOperationException("이 테스트에선 사용 안 함");
             }
 

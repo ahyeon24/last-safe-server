@@ -158,6 +158,16 @@ MVP 코딩을 막지 않기 위해 지금 당장 다루지는 않지만, **실�
 - **[2026-09-07 신규] ODsay에 "당일 자정까지 Redis 일시 캐싱"이 이용약관 제4.5.10조(사전 동의
   없는 저장 금지)에 저촉되지 않는지 서면으로 문의·확인할 것.** 공개된 약관 문구만으론 저장의
   범위(영구/일시)가 불명확함(spec.md 4절·10절 참고) — 확인 없이 그냥 캐싱 구현하고 넘어가지 말 것.
+- **[2026-09-07 신규] `OdsaySubwayScheduleClient`(`external/odsay/`)는 아직 실제 API 키로
+  검증 안 됨.** 요청 파라미터(`stationID`/`wayCode`)와 응답 DTO(`OdsaySubwayScheduleResponse`)는
+  공식 가이드 요약 기반 추정으로 작성 — TAGO/서울시 API처럼 실제 호출로 재확인 전엔 "확정"
+  취급하지 말 것. 아현님이 ODsay 개발자 센터(lab.odsay.com)에서 키를 받으면
+  `application-local.properties`의 `odsay.api-key`에 채워넣고, 실제 응답과 DTO를 대조해서
+  다르면 `OdsaySubwayScheduleResponse`/`OdsaySubwayScheduleClient` 두 파일만 고치면 됨(다른
+  코드는 `SubwayScheduleClient` 인터페이스만 알아서 영향 없음). `AssemblyTripSnapper`는 이미
+  이 클라이언트를 `Optional`로 받게 돼있어서, 준비되면 빈 등록만으로 자동 연결됨(현재
+  `AssemblyTripSnapper` 자체는 아직 `@Service`가 아니라 수동 조립 필요 — `DayTypeResolver`의
+  `HolidayClient` 부재와 같은 이유).
 - **[2026-09-06 검증 완료] 서울시 정류소별 노선 첫차/막차 API.** `getBustimeByStationList`
   실제 호출 검증 완료(활용가이드 20250924 대조). 파라미터 `arsId`+`busRouteId`, 응답
   `firstBusTm`/`lastBusTm`(`HHMMSS` 6자리 — TAGO의 `HHmm` 4자리와 형식 다름, 파싱 시 주의).

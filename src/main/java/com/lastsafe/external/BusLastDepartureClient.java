@@ -1,5 +1,6 @@
 package com.lastsafe.external;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -19,7 +20,11 @@ import com.lastsafe.domain.lasttrain.LastDeparture;
  */
 public interface BusLastDepartureClient {
 
-    LastDeparture findLastDeparture(String stationId, String routeId, DayType dayType);
+    /**
+     * {@code serviceDate}가 필요한 이유는 {@link SubwayScheduleClient#findLastDeparture}와 동일 —
+     * dayType만으론 시각표 항목을 실제 {@link LocalDateTime}으로 못 만든다.
+     */
+    LastDeparture findLastDeparture(String stationId, String routeId, LocalDate serviceDate, DayType dayType);
 
     /**
      * deadline 이하의 실제(또는 5.2절 추정) 배차 시각 중 가장 늦은 것. {@code SubwayScheduleClient}의
