@@ -158,16 +158,21 @@ MVP 코딩을 막지 않기 위해 지금 당장 다루지는 않지만, **실�
 - **[2026-09-07 신규] ODsay에 "당일 자정까지 Redis 일시 캐싱"이 이용약관 제4.5.10조(사전 동의
   없는 저장 금지)에 저촉되지 않는지 서면으로 문의·확인할 것.** 공개된 약관 문구만으론 저장의
   범위(영구/일시)가 불명확함(spec.md 4절·10절 참고) — 확인 없이 그냥 캐싱 구현하고 넘어가지 말 것.
-- **[2026-09-07 신규] `OdsaySubwayScheduleClient`(`external/odsay/`)는 아직 실제 API 키로
-  검증 안 됨.** 요청 파라미터(`stationID`/`wayCode`)와 응답 DTO(`OdsaySubwayScheduleResponse`)는
-  공식 가이드 요약 기반 추정으로 작성 — TAGO/서울시 API처럼 실제 호출로 재확인 전엔 "확정"
-  취급하지 말 것. 아현님이 ODsay 개발자 센터(lab.odsay.com)에서 키를 받으면
-  `application-local.properties`의 `odsay.api-key`에 채워넣고, 실제 응답과 DTO를 대조해서
-  다르면 `OdsaySubwayScheduleResponse`/`OdsaySubwayScheduleClient` 두 파일만 고치면 됨(다른
-  코드는 `SubwayScheduleClient` 인터페이스만 알아서 영향 없음). `AssemblyTripSnapper`는 이미
-  이 클라이언트를 `Optional`로 받게 돼있어서, 준비되면 빈 등록만으로 자동 연결됨(현재
-  `AssemblyTripSnapper` 자체는 아직 `@Service`가 아니라 수동 조립 필요 — `DayTypeResolver`의
-  `HolidayClient` 부재와 같은 이유).
+- **[2026-09-07 도입 후 즉시 폐기] `OdsaySubwayScheduleClient`를 ODsay `searchSubwaySchedule`
+  연동으로 한 번 만들었다가, 같은 세션에서 더 나은 대안(무료 + 요일별 직접 조회)을 찾아서
+  바로 삭제하고 대체함 — spec.md 3절 참고.** ODsay는 이제 지하철 막차 조회에 안 쓰고
+  경로 탐색(`searchPubTransPathT`)에만 쓴다(대체 수단 없어서 유지). `OdsayProperties`/
+  `RestClientConfig`는 경로 탐색 연동 때 재사용할 것이라 남겨둠.
+- **[2026-09-07 신규] 지하철 막차는 서울교통공사_역외부코드로 지하철 막차 시간표 검색
+  API(data.go.kr)로 조회한다(1~9호선 한정, 무료, 요일 파라미터 직접 지원).** 아직 실제
+  클라이언트 구현체는 없음 — `SeoulMetroProperties`(시크릿 배관)만 만들어둔 상태. data.go.kr
+  상세 페이지가 파라미터 한글 라벨만 공개하고 실제 쿼리 파라미터명·엔드포인트는 "활용신청" 후
+  받는 가이드 문서에만 있어서, TAGO/서울시버스 때처럼 **아현님이 이 데이터셋 활용신청하고
+  가이드 문서를 받아온 뒤에 같이 실제 클라이언트를 만들 것** — UI 라벨만 보고 파라미터명을
+  추측해서 코드로 만드는 건 ODsay 때보다도 근거가 약해서 하지 않기로 함. 신청 후
+  `application-local.properties`의 `seoul-metro.service-key`에 키를 채워넣을 것. 커버리지
+  갭(신분당선 등 서울교통공사 비운영 노선)은 spec.md 10절 미해결로 남겨둠 — 당장 MVP는
+  이 갭을 감수하고 진행.
 - **[2026-09-06 검증 완료] 서울시 정류소별 노선 첫차/막차 API.** `getBustimeByStationList`
   실제 호출 검증 완료(활용가이드 20250924 대조). 파라미터 `arsId`+`busRouteId`, 응답
   `firstBusTm`/`lastBusTm`(`HHMMSS` 6자리 — TAGO의 `HHmm` 4자리와 형식 다름, 파싱 시 주의).
