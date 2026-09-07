@@ -24,8 +24,8 @@
 
 | 연동 대상 | 용도 |
 |---|---|
-| ODsay (`searchPubTransPathT`) | 대중교통 경로 탐색(SX/SY/EX/EY 좌표 기반). **[2026-09-07 변경] 지하철역 막차 시각 조회는 더 이상 ODsay를 쓰지 않는다** — 아래 서울교통공사 API로 대체(무료 + 요일별 직접 조회 가능해서 ODsay보다 낫고, 서울시 버스 API 때처럼 배치 관측 우회도 필요 없음). ODsay는 이제 "경로 자체를 찾는" 용도로만 남음(대체 수단 없음 — pathfinding은 직접 구현하기엔 부담스러워 계속 ODsay 사용). |
-| 서울교통공사_역외부코드로 지하철 막차 시간표 검색(data.go.kr, `LINK` API) | **[2026-09-07 신규 채택]** 서울 지하철 1~9호선 막차 시각 조회, 무료, **요일 파라미터(1=평일/2=토요일/3=일요일·공휴일) 직접 지원** — 서울시 버스 API와 달리 "오늘 것만" 주는 제약이 없어 매일 배치 관측 없이 바로 조회 가능. ⚠️ **미검증** — data.go.kr 상세 페이지는 파라미터명(역외부코드/요일/상하행선)과 응답 항목(호선/외부코드/전철역코드/역사명/방향/도착시간/출발시간)만 노출하고 실제 영문 필드명·엔드포인트는 활용신청 후 받는 가이드 문서에만 있음 — TAGO/서울시버스 때처럼 실제 호출로 재확인 필요(CLAUDE.md 참고). **커버리지 한계**: 서울교통공사 운영 노선(1~9호선)만 커버 — 신분당선/공항철도/경의중앙선/수인분당선 등 타 사업자 노선은 이 API 밖(10절 미해결로 추가, 당장 MVP는 커버리지 갭을 감수하고 진행). |
+| ODsay (`searchPubTransPathT`) | 대중교통 경로 탐색(SX/SY/EX/EY 좌표 기반). **[2026-09-07 변경] 지하철역 막차 시각 조회는 더 이상 ODsay를 쓰지 않는다** — 아래 TAGO 지하철정보 서비스로 대체(무료 + 요일별 직접 조회 가능, 실제 활용가이드 문서로 검증됨). ODsay는 이제 "경로 자체를 찾는" 용도로만 남음(대체 수단 없음 — pathfinding은 직접 구현하기엔 부담스러워 계속 ODsay 사용). |
+| 국토교통부(TAGO) 지하철정보 서비스(`GetSubwaySttnAcctoSchdulList`, data.go.kr) | **[2026-09-07 최종 채택 — ODsay → 서울교통공사 API → 이걸로 두 번 더 갈아탐]** 지하철역별 시간표 조회, 무료, **요일구분코드(`dailyTypeCode`: 01=평일/02=토요일/03=일요일·공휴일) + 상하행구분코드(`upDownTypeCode`: U/D) 직접 지원** — 서울시 버스 API와 달리 배치 관측 우회 불필요. **오픈API활용가이드_국토교통부(TAGO)_지하철정보v1.1 문서로 파라미터·응답 필드 확인함**(요청: `serviceKey`/`subwayStationId`/`dailyTypeCode`/`upDownTypeCode`/`numOfRows`/`pageNo`, 응답: `depTime`/`arrTime`(`HHMISS` 6자리)/`dailyTypeCode`/`upDownTypeCode`/`subwayStationId`/`subwayRouteId`, 서비스 URL `http://apis.data.go.kr/1613000/SubwayInfo`) — 서울교통공사 API 때와 달리 UI 라벨 추측이 아니라 실제 가이드 문서 기반이라 근거가 훨씬 탄탄함. ⚠️ 그래도 **실제 키로 호출해서 동작을 확인한 적은 아직 없음** — 문서와 실제 응답이 다를 가능성은 항상 있음, 키 받으면 재확인할 것. `역명 → subwayStationId` 변환은 같은 서비스의 `GetKwrdFndSubwaySttnList`(키워드기반 지하철역 목록 조회)로 한다. 국토교통부 산하 서비스라 서울교통공사 자체 API보다 **커버리지가 넓을 가능성이 있음**(신분당선 등 타 사업자 포함 여부는 실제 호출 전까지 미확정 — 10절 미해결). |
 | 서울특별시_정류소정보조회 서비스(`getBustimeByStationList`, data.go.kr) | 서울 지역 버스 막차 (정류장 기준 직접 제공, "첫차·막차 예정 시간") — **2026-09-06 실제 호출 검증 완료(활용가이드 20250924 대조). 요청 파라미터: `arsId`(정류소번호), `busRouteId`(노선ID). 응답: `firstBusTm`/`lastBusTm`(`HHMMSS` 6자리, 초 단위 포함 — TAGO의 `HHmm` 4자리와 형식 다름 주의). 필드 설명이 "금일첫차시간"/"금일막차시간"으로 명시돼있어 **요일 지정 파라미터가 없고 항상 "오늘" 기준 값만 반환** — 평일/토요일/일요일 구분 조회 불가. 데이터 갱신주기는 매일 새벽 5시. 이 때문에 요일별 데이터는 매일 배치 동기화로 직접 관측·누적해야 함(아래 4절 배치 전략 참고).** |
 | 국토교통부(TAGO) 버스노선정보 서비스 API | 서울 외 지역 버스 막차 **1단계 추정 계산**(5.2절, 기점 막차 + 경유 정류소 → 정류장 간 평균 소요시간 누적) — **2026-09-05 재확인: TAGO 노선정보 API는 정류소별이 아닌 노선 전체 기준 첫차/막차(`startvehicletime`/`endvehicletime`)만 제공, TAGO 버스도착정보 API에도 막차 여부 필드 없음(2026-09-06 공식 활용가이드 v1.0 대조로 재확인 — 응답은 `arrtime`(초 단위 도착예상), `arrprevstationcnt`뿐이고 실시간 위치추적용, 갱신주기 10~20초) → 1단계는 추정 계산 방식이 맞음. 정확도 개선은 아래 두 API 기반 5.3절(Phase 2) 참고.** |
 | 국토교통부(TAGO) 버스위치정보(`getRouteAcctoBusLcList`) | 노선의 현재 운행 차량 위치(`vehicleno`, 현재 정류소 `nodeid`/`nodeord`) 전국 단위 실시간 조회 — 5.3절 심야 운행 기록 수집(Phase 2 기반)의 핵심 데이터 소스. GBIS(경기도 전용) 대신 이걸 사용해 전국 단일 인터페이스로 통합. |
@@ -142,7 +142,7 @@ sealed interface SnapResult {
 
 `TripSnapper`는 `SubwayScheduleClient`/`BusLastDepartureClient` 등 외부 클라이언트 타입을 몰라도 되는 얇은 함수형 인터페이스라, `LastTrainCalculationService`는 여전히 외부 API 타입에 직접 의존하지 않는다(4절 "벤더 분기는 조립 계층에만" 원칙 유지) — 실제 조회 로직은 조립 계층이 `TripSnapper` 구현체를 만들어서 주입한다. 순수 계산만 검증할 땐 `TripSnapper.none()`(항상 `ScheduleUnavailable`, 즉 스냅 안 함)을 넘긴다 — 테스트는 이걸로 기존 동작을 그대로 재현한다.
 
-**데이터 소스**: SUBWAY는 **[2026-09-07 변경]** 서울교통공사 지하철 막차 시간표 API(3절, 1~9호선), BUS는 5.3절 `BUS_NODE_PASSAGE`(관측 부족 시 5.2절 추정치, 즉 `ScheduleUnavailable`이 아니라 추정값을 `LastDeparture`에 담아 candidate 자체가 이미 추정치인 채로 스냅 없이 통과).
+**데이터 소스**: SUBWAY는 **[2026-09-07 변경]** TAGO 지하철정보 서비스 `GetSubwaySttnAcctoSchdulList`(3절), BUS는 5.3절 `BUS_NODE_PASSAGE`(관측 부족 시 5.2절 추정치, 즉 `ScheduleUnavailable`이 아니라 추정값을 `LastDeparture`에 담아 candidate 자체가 이미 추정치인 채로 스냅 없이 통과).
 
 **미해결**:
 - 스냅용 "역/노선 시간표" 조회 결과 캐싱 전략 — 기존 막차 시각 캐시(당일 자정 만료)와 통합할지, 별도 캐시를 둘지.

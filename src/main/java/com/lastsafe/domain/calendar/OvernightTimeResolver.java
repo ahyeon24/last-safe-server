@@ -31,22 +31,53 @@ public final class OvernightTimeResolver {
 
     /**
      * {@link #resolveLastDeparture}를 첫차/막차 한 쌍이 아니라, 그날의 배차 시각표 전체
-     * (ODsay {@code searchSubwaySchedule} 같은 리스트 응답)에 일반화한 버전이다.
-     * {@code orderedTimes}가 실제 운행 순서대로(자정을 넘기더라도 이어서) 정렬돼 들어온다고
-     * 가정하고, 이전 항목보다 시각이 "역행"하는 지점을 자정을 넘긴 지점으로 판단해 날짜를
-     * 하루씩 넘긴다 — 첫차/막차 두 값만 비교하던 규칙을 N개로 그대로 확장한 것뿐이라 별도
-     * 근거(예: "몇 시 이전은 다음날" 같은 임의 컷오프)가 필요 없다.
+     * (TAGO {@code GetSubwaySttnAcctoSchdulList} 같은 리스트 응답)에 일반화한 버전이다.
+     *
+     * {@code times}가 어떤 순서로 오는지 API가 보장하지 않으므로(TAGO 활용가이드에 정렬 순서
+     * 명시 없음) 입력 순서에 의존하지 않는다 — 대신 시각을 하루 안(00:00~23:59)에서 오름차순
+     * 정렬한 뒤, "순환적으로(23:59 다음은 다시 00:00)" 가장 긴 공백 구간을 찾는다. 실제
+     * 지하철은 심야에 운행이 끊기는 구간이 반드시 있으므로, 그 가장 긴 공백 직후가 "그날의
+     * 첫차"이고 공백 직전까지가 "자정을 넘긴 막차들"이라는 논리다 — 몇 시 이전은 다음날이라는
+     * 임의 컷오프 없이, 실제 데이터의 운행 공백만으로 자정 넘김을 판별한다.
+     *
+     * 시각이 1개 이하이거나 하루 종일 고르게 퍼져있어 공백이 딱히 두드러지지 않는 경우엔
+     * (막차 서비스 특성상 실제로는 거의 없음) 가장 긴 공백 뒤를 그냥 그대로 채택한다.
+     *
+     * ⚠️ 전제: 실제 배차 간격(낮 동안)이 심야 운행 공백보다 항상 짧다 — TAGO 활용가이드
+     * 예시(역 하나·하루 257건)처럼 실제 지하철 시간표는 이 전제를 만족한다. 배차가 아주
+     * 뜸한 노선에서 낮 시간대 배차 간격이 우연히 심야 공백보다 길면 오판할 수 있음 — 지금은
+     * 근거 없는 조기 대응이라 처리 안 함, 실제로 문제되면 그때 대응.
      */
-    public static List<LocalDateTime> resolveScheduleSequence(LocalDate serviceDate, List<LocalTime> orderedTimes) {
-        List<LocalDateTime> result = new ArrayList<>(orderedTimes.size());
-        LocalDate currentDate = serviceDate;
-        LocalTime previous = null;
-        for (LocalTime time : orderedTimes) {
-            if (previous != null && time.isBefore(previous)) {
-                currentDate = currentDate.plusDays(1);
+    public static List<LocalDateTime> resolveUnorderedDailySchedule(LocalDate serviceDate, List<LocalTime> times) {
+        if (times.isEmpty()) {
+            return List.of();
+        }
+        List<LocalTime> sorted = times.stream().sorted().distinct().toList();
+        if (sorted.size() == 1) {
+            return List.of(serviceDate.atTime(sorted.get(0)));
+        }
+
+        int rolloverIndex = 0;
+        long largestGapSeconds = -1;
+        for (int i = 0; i < sorted.size(); i++) {
+            LocalTime current = sorted.get(i);
+            LocalTime next = sorted.get((i + 1) % sorted.size());
+            long gapSeconds = current.until(next, java.time.temporal.ChronoUnit.SECONDS);
+            if (gapSeconds < 0) {
+                gapSeconds += 24 * 3600; // sorted 리스트의 마지막→처음으로 넘어가는 순환 구간
             }
-            result.add(currentDate.atTime(time));
-            previous = time;
+            if (gapSeconds > largestGapSeconds) {
+                largestGapSeconds = gapSeconds;
+                rolloverIndex = (i + 1) % sorted.size(); // 이 공백 바로 다음이 "그날의 첫차"
+            }
+        }
+
+        List<LocalDateTime> result = new ArrayList<>(sorted.size());
+        int sameDayCount = sorted.size() - rolloverIndex;
+        for (int i = 0; i < sorted.size(); i++) {
+            int idx = (rolloverIndex + i) % sorted.size();
+            LocalDate date = i < sameDayCount ? serviceDate : serviceDate.plusDays(1);
+            result.add(date.atTime(sorted.get(idx)));
         }
         return result;
     }

@@ -158,21 +158,26 @@ MVP 코딩을 막지 않기 위해 지금 당장 다루지는 않지만, **실�
 - **[2026-09-07 신규] ODsay에 "당일 자정까지 Redis 일시 캐싱"이 이용약관 제4.5.10조(사전 동의
   없는 저장 금지)에 저촉되지 않는지 서면으로 문의·확인할 것.** 공개된 약관 문구만으론 저장의
   범위(영구/일시)가 불명확함(spec.md 4절·10절 참고) — 확인 없이 그냥 캐싱 구현하고 넘어가지 말 것.
-- **[2026-09-07 도입 후 즉시 폐기] `OdsaySubwayScheduleClient`를 ODsay `searchSubwaySchedule`
-  연동으로 한 번 만들었다가, 같은 세션에서 더 나은 대안(무료 + 요일별 직접 조회)을 찾아서
-  바로 삭제하고 대체함 — spec.md 3절 참고.** ODsay는 이제 지하철 막차 조회에 안 쓰고
-  경로 탐색(`searchPubTransPathT`)에만 쓴다(대체 수단 없어서 유지). `OdsayProperties`/
-  `RestClientConfig`는 경로 탐색 연동 때 재사용할 것이라 남겨둠.
-- **[2026-09-07 신규] 지하철 막차는 서울교통공사_역외부코드로 지하철 막차 시간표 검색
-  API(data.go.kr)로 조회한다(1~9호선 한정, 무료, 요일 파라미터 직접 지원).** 아직 실제
-  클라이언트 구현체는 없음 — `SeoulMetroProperties`(시크릿 배관)만 만들어둔 상태. data.go.kr
-  상세 페이지가 파라미터 한글 라벨만 공개하고 실제 쿼리 파라미터명·엔드포인트는 "활용신청" 후
-  받는 가이드 문서에만 있어서, TAGO/서울시버스 때처럼 **아현님이 이 데이터셋 활용신청하고
-  가이드 문서를 받아온 뒤에 같이 실제 클라이언트를 만들 것** — UI 라벨만 보고 파라미터명을
-  추측해서 코드로 만드는 건 ODsay 때보다도 근거가 약해서 하지 않기로 함. 신청 후
-  `application-local.properties`의 `seoul-metro.service-key`에 키를 채워넣을 것. 커버리지
-  갭(신분당선 등 서울교통공사 비운영 노선)은 spec.md 10절 미해결로 남겨둠 — 당장 MVP는
-  이 갭을 감수하고 진행.
+- **[2026-09-07 지하철 막차 데이터 소스, 세 번 갈아탄 끝에 최종 확정] ODsay
+  `searchSubwaySchedule` → 서울교통공사 API(UI 라벨만 보고 추측, 클라이언트 미착수) →
+  TAGO 지하철정보 서비스 `GetSubwaySttnAcctoSchdulList`로 최종 채택.** ODsay는 이제 지하철
+  막차 조회에 안 쓰고 경로 탐색(`searchPubTransPathT`)에만 쓴다(대체 수단 없어서 유지,
+  `OdsayProperties`/`RestClientConfig`는 그때 재사용). `TagoSubwayScheduleClient`
+  (`external/tago/`)로 실제 구현 완료 — **아현님이 다운로드한 공식 활용가이드 문서
+  (오픈API활용가이드_국토교통부(TAGO)_지하철정보v1.1)로 파라미터·응답 필드를 확인**했다는 점에서
+  앞선 두 시도보다 근거가 훨씬 탄탄함(UI 라벨 추측이 아니라 실제 문서). 요청:
+  `serviceKey`/`subwayStationId`/`dailyTypeCode`(01/02/03)/`upDownTypeCode`(U/D)/
+  `numOfRows`/`pageNo`, 응답: `depTime`/`arrTime`(`HHMISS`), 서비스 URL
+  `http://apis.data.go.kr/1613000/SubwayInfo`. **그래도 실제 키로 호출해서 동작 확인은
+  아직 안 함** — 문서와 실제 응답이 다를 가능성 있음, 키 준비되면 재확인할 것. `역명 →
+  subwayStationId` 변환은 같은 서비스의 `GetKwrdFndSubwaySttnList`가 필요한데 아직 미착수
+  (조립 계층에서 필요해질 때 처리). data.go.kr 인증키는 `DataGoKrProperties`
+  (`external/datagokr/`)로 통합 — TAGO 계열 API가 전부 이 키 하나를 공유해서 씀(활용가이드
+  문서로 확인됨), 서울교통공사 전용 `SeoulMetroProperties`는 삭제함(도입 직후 폐기).
+  `application-local.properties`의 `datagokr.service-key`에 키를 채워넣을 것 — TAGO/서울시버스
+  검증할 때 쓰던 그 키. 자정 넘긴 시각표 처리는 `OvernightTimeResolver
+  #resolveUnorderedDailySchedule`(TAGO가 정렬 순서를 보장 안 해서, 심야 운행 공백을 찾아
+  자정 넘김을 판별하는 방식 — 낮 배차가 촘촘하다는 전제, 해당 메서드 주석 참고) 사용.
 - **[2026-09-06 검증 완료] 서울시 정류소별 노선 첫차/막차 API.** `getBustimeByStationList`
   실제 호출 검증 완료(활용가이드 20250924 대조). 파라미터 `arsId`+`busRouteId`, 응답
   `firstBusTm`/`lastBusTm`(`HHMMSS` 6자리 — TAGO의 `HHmm` 4자리와 형식 다름, 파싱 시 주의).
