@@ -225,10 +225,18 @@ MVP 코딩을 막지 않기 위해 지금 당장 다루지는 않지만, **실�
   (`src/test/resources/odsay/search-pub-trans-path-t-real-sample.json`).
   **ODsay Basic은 등록된 서버 IP에서만 호출 허용** — 개발 중 접속 IP 바뀌면 lab.odsay.com에서
   재등록 필요(유동 IP 환경 함정, spec.md 10절 참고).
-  **[2026-09-09 신규 발견, 다음에 풀어야 할 것]** ODsay가 주는 역/정류소 ID는 ODsay 자체
-  체계라 TAGO/서울시 API 식별자와 안 맞음 — 지하철은 역명, 버스는 `busStopArsId`(서울시 API
-  `arsId`와 동일 개념 확인됨)로 재매핑하는 조립 계층 로직이 아직 없음. `TransitSegment`를
-  실제로 채우려면(cityCode 포함) 이 매핑부터 풀어야 함 — 다음 세션 후보.
+  **[2026-09-09 신규 발견 → 지하철은 2026-09-11 해결]** ODsay가 주는 역/정류소 ID는 ODsay
+  자체 체계라 TAGO/서울시 API 식별자와 안 맞음.
+  **지하철**: `TagoSubwayStationLookupClient`(`GetKwrdFndSubwaySttnList`, 실제 호출로 검증)
+  + `SubwayStationIdResolver`(`domain/route/`, 역명+노선명 대조로 최종 ID 하나 고르는 순수
+  로직)로 해결. 실제 데이터로 확인한 함정: 노선명 표기가 벤더마다 다름(부분 문자열 포함으로
+  판정) + 같은 역명·노선명이 다른 도시에도 있으면 TAGO 응답에 좌표가 없어 구분 불가(이 경우
+  억지로 고르지 않고 빈 값 반환 — spec.md 3절 "시청" 사례 참고). `역명 → subwayStationId`
+  변환은 됐지만, 이걸 실제 `TransitSegment.stationId`에 채워 넣는 조립 계층 배선은 아직 없음.
+  **버스는 미해결** — `busStopArsId`(서울시 API `arsId`와 동일 개념)는 서울시 버스 클라이언트
+  (미구현) 붙으면 쓸 수 있을 듯하나, TAGO/경기 버스 쪽(`nodeid`) 매핑은 좌표 기반 근접
+  정류소 조회로 풀어야 할 것으로 보임 — 아직 착수 전. `TransitSegment`를 실제로 채우려면
+  (cityCode 포함) 버스 쪽 매핑 + 실제 조립 계층 배선이 다음 세션 후보.
 - **개인정보처리방침, 이용약관 작성 및 앱 내 게시.** 위치정보, OAuth 계정 정보를 다루므로 앱스토어
   심사에서도 요구되고 법적으로도 필요.
 - **위치기반서비스 사업자 신고 여부 확인.** 국내에서 위치정보를 활용한 서비스는 방송통신위원회

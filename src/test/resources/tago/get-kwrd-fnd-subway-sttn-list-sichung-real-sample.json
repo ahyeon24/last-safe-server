@@ -1,0 +1,92 @@
+{
+  "response": {
+    "header": {
+      "resultCode": "00",
+      "resultMsg": "NORMAL SERVICE."
+    },
+    "body": {
+      "items": {
+        "item": [
+          {
+            "subwayStationId": "MTRBGB10114",
+            "subwayStationName": "김해시청",
+            "subwayRouteName": "부산김해경전철"
+          },
+          {
+            "subwayStationId": "MTRBS10122",
+            "subwayStationName": "시청(연제)",
+            "subwayRouteName": "1호선"
+          },
+          {
+            "subwayStationId": "MTRBS20243",
+            "subwayStationName": "양산(시청.동원과학기술대학교)",
+            "subwayRouteName": "2호선"
+          },
+          {
+            "subwayStationId": "MTRDJ10011",
+            "subwayStationName": "시청",
+            "subwayRouteName": "1호선"
+          },
+          {
+            "subwayStationId": "MTREVE1Y117",
+            "subwayStationName": "시청.용인대",
+            "subwayRouteName": "에버라인"
+          },
+          {
+            "subwayStationId": "MTRGMG1G106",
+            "subwayStationName": "사우(김포시청)",
+            "subwayRouteName": "김포골드라인"
+          },
+          {
+            "subwayStationId": "MTRIC7755",
+            "subwayStationName": "부천시청",
+            "subwayRouteName": "7호선"
+          },
+          {
+            "subwayStationId": "MTRICI1124",
+            "subwayStationName": "인천시청",
+            "subwayRouteName": "인천1호선"
+          },
+          {
+            "subwayStationId": "MTRICI2221",
+            "subwayStationName": "인천시청",
+            "subwayRouteName": "인천2호선"
+          },
+          {
+            "subwayStationId": "MTRKRK1K243",
+            "subwayStationName": "수원시청(경기도문화의전당)",
+            "subwayRouteName": "수인분당"
+          },
+          {
+            "subwayStationId": "MTRS11151",
+            "subwayStationName": "시청",
+            "subwayRouteName": "1호선"
+          },
+          {
+            "subwayStationId": "MTRS12201",
+            "subwayStationName": "시청",
+            "subwayRouteName": "2호선"
+          },
+          {
+            "subwayStationId": "MTRS152565",
+            "subwayStationName": "하남시청(덕풍.신장)",
+            "subwayRouteName": "5호선"
+          },
+          {
+            "subwayStationId": "MTRSWWSS22",
+            "subwayStationName": "시흥시청",
+            "subwayRouteName": "서해선"
+          },
+          {
+            "subwayStationId": "MTRULU10114",
+            "subwayStationName": "의정부시청",
+            "subwayRouteName": "의정부"
+          }
+        ]
+      },
+      "numOfRows": 20,
+      "pageNo": 1,
+      "totalCount": 15
+    }
+  }
+}
