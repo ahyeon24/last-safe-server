@@ -1,0 +1,176 @@
+{
+  "result": {
+    "path": [
+      {
+        "pathType": 2,
+        "info": {
+          "trafficDistance": 9000.0,
+          "totalWalk": 400,
+          "totalTime": 40,
+          "payment": 1500,
+          "busTransitCount": 1,
+          "subwayTransitCount": 0,
+          "mapObj": "9001:1:1:20",
+          "firstStartStation": "가상출발정류장",
+          "lastEndStation": "가상도착정류장",
+          "totalStationCount": 20,
+          "busStationCount": 20,
+          "subwayStationCount": 0,
+          "totalDistance": 9400.0,
+          "totalWalkTime": -1,
+          "checkIntervalTime": 100,
+          "checkIntervalTimeOverYn": "N",
+          "totalIntervalTime": 10
+        },
+        "subPath": [
+          {
+            "trafficType": 3,
+            "distance": 300,
+            "sectionTime": 4
+          },
+          {
+            "trafficType": 2,
+            "distance": 9000,
+            "sectionTime": 33,
+            "stationCount": 20,
+            "lane": [
+              {
+                "busNo": "9901",
+                "type": 11,
+                "busID": 9001,
+                "busLocalBlID": "900000001",
+                "busCityCode": 1000,
+                "busProviderCode": 4
+              }
+            ],
+            "intervalTime": 10,
+            "startName": "가상출발정류장",
+            "startX": 127.000001,
+            "startY": 37.500001,
+            "endName": "가상도착정류장",
+            "endX": 126.950001,
+            "endY": 37.560001,
+            "startID": 900001,
+            "startStationCityCode": 1000,
+            "startStationProviderCode": 4,
+            "startLocalStationID": "900000101",
+            "startArsID": "99001",
+            "endID": 900002,
+            "endStationCityCode": 1000,
+            "endStationProviderCode": 4,
+            "endLocalStationID": "900000102",
+            "endArsID": "99002"
+          },
+          {
+            "trafficType": 3,
+            "distance": 100,
+            "sectionTime": 3
+          }
+        ]
+      },
+      {
+        "pathType": 3,
+        "info": {
+          "trafficDistance": 9500.0,
+          "totalWalk": 700,
+          "totalTime": 45,
+          "payment": 1650,
+          "busTransitCount": 1,
+          "subwayTransitCount": 1,
+          "mapObj": "9002:1:1:8@99:2:1:3",
+          "firstStartStation": "가상출발정류장",
+          "lastEndStation": "가상도착역",
+          "totalStationCount": 11,
+          "busStationCount": 8,
+          "subwayStationCount": 3,
+          "totalDistance": 10200.0,
+          "totalWalkTime": -1,
+          "checkIntervalTime": 100,
+          "checkIntervalTimeOverYn": "N",
+          "totalIntervalTime": 18
+        },
+        "subPath": [
+          {
+            "trafficType": 3,
+            "distance": 300,
+            "sectionTime": 4
+          },
+          {
+            "trafficType": 2,
+            "distance": 7500,
+            "sectionTime": 24,
+            "stationCount": 8,
+            "lane": [
+              {
+                "busNo": "9902",
+                "type": 11,
+                "busID": 9002,
+                "busLocalBlID": "900000002",
+                "busCityCode": 1000,
+                "busProviderCode": 4
+              }
+            ],
+            "intervalTime": 8,
+            "startName": "가상출발정류장",
+            "startX": 127.000001,
+            "startY": 37.500001,
+            "endName": "가상환승정류장",
+            "endX": 126.980001,
+            "endY": 37.550001,
+            "startID": 900001,
+            "startStationCityCode": 1000,
+            "startStationProviderCode": 4,
+            "startLocalStationID": "900000101",
+            "startArsID": "99001",
+            "endID": 900003,
+            "endStationCityCode": 1000,
+            "endStationProviderCode": 4,
+            "endLocalStationID": "900000103",
+            "endArsID": "99003"
+          },
+          {
+            "trafficType": 3,
+            "distance": 250,
+            "sectionTime": 5
+          },
+          {
+            "trafficType": 1,
+            "distance": 2000,
+            "sectionTime": 6,
+            "stationCount": 3,
+            "lane": [
+              {
+                "name": "가상 9호선",
+                "subwayCode": 99,
+                "subwayCityCode": 1000
+              }
+            ],
+            "intervalTime": 10,
+            "startName": "가상환승역",
+            "startX": 126.981001,
+            "startY": 37.551001,
+            "endName": "가상도착역",
+            "endX": 126.960001,
+            "endY": 37.558001,
+            "way": "가상종점",
+            "wayCode": 2,
+            "door": "null",
+            "startID": 9901,
+            "endID": 9903,
+            "startExitNo": "1",
+            "startExitX": 126.981101,
+            "startExitY": 37.551101,
+            "endExitNo": "2",
+            "endExitX": 126.960101,
+            "endExitY": 37.558101
+          },
+          {
+            "trafficType": 3,
+            "distance": 150,
+            "sectionTime": 3
+          }
+        ]
+      }
+    ]
+  }
+}

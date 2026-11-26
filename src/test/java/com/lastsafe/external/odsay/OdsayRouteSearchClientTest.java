@@ -22,10 +22,11 @@ import com.lastsafe.domain.route.PathLeg;
 import com.lastsafe.entity.TransportType;
 
 /**
- * 이 테스트는 **2026-09-09 실제 ODsay 호출로 받은 응답을 그대로**(passStopList 등 이 클라이언트가
- * 안 쓰는 항목만 제거) 픽스처로 쓴다({@code src/test/resources/odsay/search-pub-trans-path-t-real-sample.json},
- * 강남역→시청역 조회 결과 중 2건). 다른 TAGO 테스트들과 달리 "우리가 추정한 형태"가 아니라
- * "실제로 받은 형태"를 검증하는 것.
+ * 픽스처({@code src/test/resources/odsay/search-pub-trans-path-t-sample.json})는 2026-09-09 실제
+ * ODsay 호출로 확인한 응답과 **필드 구조만 같고 값은 모두 가상**이다(역·정류장 이름, 노선 번호, ID,
+ * 좌표 등). 실제 응답을 저장소에 두면 ODsay 이용약관 제4.5.10조(사전 동의 없는 결과 데이터
+ * 저장·배포 금지)에 걸릴 수 있어 2026-11-26 교체했다. 구조는 실제 응답 기준이라, 다른 TAGO
+ * 테스트들처럼 "문서로 추정한 형태"가 아니라 "실제로 받은 형태"를 검증한다.
  */
 class OdsayRouteSearchClientTest {
 
@@ -41,7 +42,7 @@ class OdsayRouteSearchClientTest {
 
     private static String readRealSampleFixture() throws Exception {
         return StreamUtils.copyToString(
-                new ClassPathResource("odsay/search-pub-trans-path-t-real-sample.json").getInputStream(),
+                new ClassPathResource("odsay/search-pub-trans-path-t-sample.json").getInputStream(),
                 StandardCharsets.UTF_8);
     }
 
@@ -66,14 +67,14 @@ class OdsayRouteSearchClientTest {
 
         PathCandidate first = client.searchPaths(127.027583, 37.497910, 126.977041, 37.566528).get(0);
 
-        // 첫 경로: 도보 → 버스(402번) → 도보
+        // 첫 경로: 도보 → 버스(9901번) → 도보
         assertThat(first.legs()).hasSize(3);
         PathLeg busLeg = first.legs().get(1);
         assertThat(busLeg.type()).isEqualTo(TransportType.BUS);
-        assertThat(busLeg.lineName()).isEqualTo("402");
-        assertThat(busLeg.busStopArsId()).isEqualTo("22012");
-        assertThat(busLeg.startName()).isEqualTo("지하철2호선강남역");
-        assertThat(busLeg.durationSec()).isEqualTo(36 * 60);
+        assertThat(busLeg.lineName()).isEqualTo("9901");
+        assertThat(busLeg.busStopArsId()).isEqualTo("99001");
+        assertThat(busLeg.startName()).isEqualTo("가상출발정류장");
+        assertThat(busLeg.durationSec()).isEqualTo(33 * 60);
     }
 
     @Test
@@ -89,7 +90,7 @@ class OdsayRouteSearchClientTest {
         assertThat(walkLeg.startName()).isNull();
         assertThat(walkLeg.lineName()).isNull();
         assertThat(walkLeg.busStopArsId()).isNull();
-        assertThat(walkLeg.durationSec()).isEqualTo(5 * 60);
+        assertThat(walkLeg.durationSec()).isEqualTo(4 * 60);
     }
 
     @Test
@@ -100,13 +101,13 @@ class OdsayRouteSearchClientTest {
 
         PathCandidate second = client.searchPaths(127.027583, 37.497910, 126.977041, 37.566528).get(1);
 
-        // 두 번째 경로: 도보 → 버스 → 도보 → 지하철(수도권 1호선) → 도보
+        // 두 번째 경로: 도보 → 버스 → 도보 → 지하철(가상 9호선) → 도보
         PathLeg subwayLeg = second.legs().get(3);
         assertThat(subwayLeg.type()).isEqualTo(TransportType.SUBWAY);
-        assertThat(subwayLeg.lineName()).isEqualTo("수도권 1호선");
-        assertThat(subwayLeg.direction()).isEqualTo("시청");
-        assertThat(subwayLeg.startName()).isEqualTo("종로3가");
-        assertThat(subwayLeg.endName()).isEqualTo("시청");
+        assertThat(subwayLeg.lineName()).isEqualTo("가상 9호선");
+        assertThat(subwayLeg.direction()).isEqualTo("가상종점");
+        assertThat(subwayLeg.startName()).isEqualTo("가상환승역");
+        assertThat(subwayLeg.endName()).isEqualTo("가상도착역");
         assertThat(subwayLeg.busStopArsId()).isNull();
     }
 
