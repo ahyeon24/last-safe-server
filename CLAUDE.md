@@ -1,7 +1,7 @@
 # last-safe-server
 
 막차 세이프(Last Safe) 백엔드 API 서버. 상세 스펙은 **`docs/spec.md`를 항상 먼저 읽고** 작업할 것.
-원본 설계 문서(.docx)는 `docs/source/`에 있음 — spec.md에 없는 세부사항이 필요할 때만 참조.
+원본 설계 문서(마크다운)는 `docs/source/`에 있음 — spec.md에 없는 세부사항이 필요할 때만 참조.
 
 ## 프로젝트 목표
 
@@ -221,8 +221,9 @@ MVP 코딩을 막지 않기 위해 지금 당장 다루지는 않지만, **실�
   **실제 키로 호출해서 검증한 첫 외부 연동**(강남역→시청역, 21개 경로 후보 수신 확인) — 다른
   TAGO 클라이언트들과 달리 "⚠️ 미검증" 딱지 없이 확정으로 올림. `RouteSearchClient` 인터페이스
   + 도메인 타입 `PathCandidate`/`PathLeg`(`domain/route/`) 신규 추가. 실제 응답 구조는 spec.md
-  3절 참고. 실제 응답 샘플을 그대로 테스트 픽스처로 저장해둠
-  (`src/test/resources/odsay/search-pub-trans-path-t-real-sample.json`).
+  3절 참고. 테스트 픽스처는 실제 응답과 구조만 같은 가상 데이터
+  (`src/test/resources/odsay/search-pub-trans-path-t-sample.json`) — 처음엔 실제 응답을 그대로
+  저장했으나 이용약관 제4.5.10조 때문에 2026-11-26 가상 값으로 교체함.
   **ODsay Basic은 등록된 서버 IP에서만 호출 허용** — 개발 중 접속 IP 바뀌면 lab.odsay.com에서
   재등록 필요(유동 IP 환경 함정, spec.md 10절 참고).
   **[2026-09-09 신규 발견 → 지하철은 2026-09-11 해결]** ODsay가 주는 역/정류소 ID는 ODsay
@@ -265,5 +266,5 @@ src/main/java/com/lastsafe/
   entity/          # JPA 엔티티 (ERD 기준)
 docs/
   spec.md          # 핵심 스펙 요약 (항상 먼저 참조)
-  source/          # 원본 .docx 설계 문서 + ERD
+  source/          # 원본 설계 문서(.md) + ERD
 ```
